@@ -1,3 +1,22 @@
-body{
-    margin:0;
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+.recipeSection {
+  min-width: 0;
+  scroll-margin-top: 96px;
 }

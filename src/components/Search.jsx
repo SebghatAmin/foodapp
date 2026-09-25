@@ -1,21 +1,53 @@
 import { useEffect, useState } from "react";
-import styles from "./search.module.css"
+import { fetchJsonWithCache } from "../utils/recipeApi";
+import styles from "./search.module.css";
+
 const URL = "https://api.spoonacular.com/recipes/complexSearch";
 const API_KEY = import.meta.env.VITE_SPOONACULAR_API_KEY;
-export default function Search({ foodData, setFoodData }) {
+const SEARCH_DELAY = 600;
+
+export default function Search({ setFoodData }) {
   const [query, setQuery] = useState("pizza");
+
   useEffect(() => {
-    async function foodfetch() {
-      const res = await fetch(`${URL}?query=${query}&apiKey=${API_KEY}`);
-      const data = await res.json();
-      console.log(data.results);
-      setFoodData(data.results);
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      setFoodData([]);
+      return;
     }
-    foodfetch();
-  }, [query]);
+
+    let ignore = false;
+
+    async function foodfetch() {
+      try {
+        const data = await fetchJsonWithCache(
+          `${URL}?query=${encodeURIComponent(normalizedQuery)}&apiKey=${API_KEY}`,
+          `search:${normalizedQuery}`,
+        );
+
+        if (!ignore) {
+          setFoodData(Array.isArray(data.results) ? data.results : []);
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error("Unable to fetch recipes", error);
+        }
+      }
+    }
+
+    const timeoutId = setTimeout(foodfetch, SEARCH_DELAY);
+
+    return () => {
+      ignore = true;
+      clearTimeout(timeoutId);
+    };
+  }, [query, setFoodData]);
+
   return (
     <div className={styles.searchContainer}>
-      <input className={styles.input}
+      <input
+        className={styles.input}
         type="text"
         onChange={(e) => {
           setQuery(e.target.value);
